@@ -139,7 +139,9 @@ fn revoked_grant_cannot_be_renewed_but_can_be_reinstated_by_player() {
     assert_eq!(grant.revoked_at, None);
     assert_eq!(h.contract.get_accumulated_fees(), fees_before);
     assert_eq!(
-        h.contract.get_player_access_grants(&PLAYER_ID, &0, &50).len(),
+        h.contract
+            .get_player_access_grants(&PLAYER_ID, &0, &50)
+            .len(),
         1
     );
 }

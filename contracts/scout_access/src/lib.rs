@@ -2442,7 +2442,10 @@ impl ScoutAccessContract {
         if env
             .storage()
             .persistent()
-            .has(&DataKey::EvidenceAccessAdminRevoked(player_id, scout.clone()))
+            .has(&DataKey::EvidenceAccessAdminRevoked(
+                player_id,
+                scout.clone(),
+            ))
         {
             return Err(ScoutAccessError::GrantAdminRevoked);
         }

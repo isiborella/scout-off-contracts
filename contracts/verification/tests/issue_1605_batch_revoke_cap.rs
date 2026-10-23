@@ -70,7 +70,6 @@ fn approve_n_milestones(
     cid_seed_start + count
 }
 
-
 fn register_validator_n(env: &Env, client: &VerificationContractClient, n: u32) -> Address {
     let wallet = Address::generate(env);
     client.register_validator(
@@ -81,7 +80,6 @@ fn register_validator_n(env: &Env, client: &VerificationContractClient, n: u32) 
     );
     wallet
 }
-
 
 #[test]
 fn oversized_batch_is_rejected_before_any_state_change() {
@@ -124,7 +122,10 @@ fn for_cause_batch_deactivates_immediately_and_defers_cascade() {
     }
     for i in 1u64..=60 {
         assert!(client.is_milestone_flagged(&i, &1u32), "v1 milestone {i}");
-        assert!(client.is_milestone_flagged(&(1000 + i), &1u32), "v2 milestone {i}");
+        assert!(
+            client.is_milestone_flagged(&(1000 + i), &1u32),
+            "v2 milestone {i}"
+        );
     }
 }
 
