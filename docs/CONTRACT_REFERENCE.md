@@ -5509,6 +5509,7 @@ pub struct TrialOffer {
 | 56 | `PlayerNotRegistered` | The registration contract has no player with this ID |
 | 57 | `PlayerDeactivated` | The player has been deactivated in the registration contract |
 | 58 | `MigrationWindowSealed` | `open_migration_window` was called after the window was permanently closed by `close_migration_window` |
+| 59 | `BatchTooLarge` | `batch_revoke_validators` was called with more than 10 wallets |
 
 ### `ProgressError` (progress contract)
 
