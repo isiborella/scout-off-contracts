@@ -10,6 +10,12 @@ pub use scoutchain_shared_types::WiringLink;
 ///
 /// `entries` contains at most 50 player IDs per page; `total` is the full
 /// number of players the scout has ever contacted.
+///
+/// NOTE: this is intentionally kept as a contract-local struct rather than
+/// migrated to `scoutchain_shared_types::U64Page`. Swapping the return type of
+/// the existing `get_scout_contacts_page` would change the spec type name in
+/// generated bindings (an ABI break). New paged getters should return
+/// `U64Page` from shared-types instead of reinventing this shape.
 #[contracttype]
 #[derive(Clone, Debug, PartialEq)]
 pub struct ScoutContactsPage {
