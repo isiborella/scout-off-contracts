@@ -873,3 +873,6 @@ Quick checklist:
 
 <!-- handsoff-issue-1665 -->
 - #1665: shared-types: add exact length-boundary tests for validate_cid
+
+<!-- handsoff-issue-1642 -->
+- #1642: all contracts: record the previous WASM hash on upgrade and expose an upgrade history for rollback runbooks
