@@ -855,3 +855,12 @@ Quick checklist:
 
 <!-- handsoff-issue-1668 -->
 - #1668: progress: set_registration_contract has a merged/misplaced doc comment and skips the instance-TTL bump its siblings perform
+
+<!-- handsoff-issue-1671 -->
+- #1671: progress: extract the duplicated registration-sync block from advance_level and reset_player_level
+
+<!-- handsoff-issue-1672 -->
+- #1672: scout_access: add_to_tier_index is marked #[allow(dead_code)] but is used
+
+<!-- handsoff-issue-1673 -->
+- #1673: scout_access: admin_seed_fee_config / admin_seed_fee_config_history redefine the history cap locally

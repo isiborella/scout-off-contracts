@@ -42,6 +42,25 @@ pub struct ProgressEntry {
     pub ledger_sequence: u32,
 }
 
+/// Named result of a cursor-based history page read (issue #1670).
+///
+/// Replaces the anonymous `(Vec<ProgressEntry>, u32, u32)` tuple previously
+/// returned by `get_history_page_with_cursor`, which generated an untyped
+/// positional array in the TypeScript bindings and made it easy to swap
+/// `next_index` and `snapshot_count` by mistake.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct HistoryCursorPage {
+    /// The history entries in this page, in chronological order.
+    pub entries: soroban_sdk::Vec<ProgressEntry>,
+    /// Index to pass as `cursor` on the next call. Equal to the number of
+    /// entries returned when the page is exhausted.
+    pub next_index: u32,
+    /// Total number of history entries recorded for the player at the time
+    /// of the read (the snapshot the page was taken against).
+    pub snapshot_count: u32,
+}
+
 /// Result of `get_history_since_v2`: entries newest-first plus a flag telling
 /// the caller whether more matching entries may exist beyond `limit` or the
 /// page-scan cap.
