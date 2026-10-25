@@ -1,5 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { StrKey } from "@stellar/stellar-sdk";
+import { config } from "./config";
 import {
   buildChallengeTx,
   verifyChallengeTx,
@@ -12,27 +14,51 @@ import { prisma } from "./db";
 const app = express();
 app.use(express.json());
 
+function isValidAccount(account: unknown): account is string {
+  return typeof account === "string" && StrKey.isValidEd25519PublicKey(account);
+}
+
+/**
+ * Map a SEP-10 verification failure to a stable error code so raw SDK /
+ * exception messages never reach the client. Returns `null` for errors that
+ * are not verification failures (e.g. database outages).
+ */
+function classifyAuthError(error: unknown): string | null {
+  const message = error instanceof Error ? error.message : "";
+  const name = error instanceof Error ? error.name : "";
+  if (/expired|time ?bounds/i.test(message)) return "challenge_expired";
+  if (/already been used/i.test(message)) return "challenge_replayed";
+  if (/account mismatch/i.test(message)) return "account_mismatch";
+  if (/signature|signer/i.test(message)) return "bad_signature";
+  if (name === "InvalidChallengeError" || /challenge/i.test(message)) {
+    return "invalid_challenge";
+  }
+  return null;
+}
+
 // SEP-10 challenge endpoint — returns a server-signed challenge
 // transaction that the client must sign and return.
 app.get("/auth", async (req: Request, res: Response) => {
-  const account = req.query.account as string | undefined;
-  if (!account) {
+  const account = req.query.account;
+  if (account === undefined || account === "") {
     return res.status(400).json({ error: "account query parameter is required" });
+  }
+  if (!isValidAccount(account)) {
+    return res.status(400).json({ error: "invalid account" });
   }
 
   try {
     const challenge = await buildChallengeTx(account);
     res.json({ challenge });
   } catch (error) {
-    return res.status(500).json({
-      error: error instanceof Error ? error.message : "Internal server error",
-    });
+    console.error("GET /auth: failed to build challenge", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // SEP-10 verification endpoint — client submits the signed challenge
-// transaction; server verifies it and issues a JWT whose role is
-// derived from on-chain / indexer state.
+// transaction; server verifies it and issues an access token plus a rotating
+// refresh token, with the role derived from on-chain / indexer state.
 app.post("/auth", async (req: Request, res: Response) => {
   const { transaction, account } = req.body as {
     transaction?: string;
@@ -44,6 +70,9 @@ app.post("/auth", async (req: Request, res: Response) => {
       .status(400)
       .json({ error: "transaction and account are required" });
   }
+  if (typeof transaction !== "string" || !isValidAccount(account)) {
+    return res.status(400).json({ error: "invalid account" });
+  }
 
   try {
     const verifiedAccount = await verifyChallengeTx(transaction, account);
@@ -51,9 +80,13 @@ app.post("/auth", async (req: Request, res: Response) => {
 
     res.json(session);
   } catch (error) {
-    return res.status(401).json({
-      error: error instanceof Error ? error.message : "Authentication failed",
-    });
+    const code = classifyAuthError(error);
+    if (code === null) {
+      console.error("POST /auth: unexpected error", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+    console.warn(`POST /auth: verification failed (${code})`, error);
+    return res.status(401).json({ error: code });
   }
 });
 
@@ -61,16 +94,18 @@ app.post("/auth", async (req: Request, res: Response) => {
 app.post("/auth/refresh", async (req: Request, res: Response) => {
   const { refreshToken } = req.body as { refreshToken?: string };
 
-  if (!refreshToken) {
+  if (!refreshToken || typeof refreshToken !== "string") {
     return res.status(400).json({ error: "refreshToken is required" });
   }
 
   try {
     res.json(await refreshSession(refreshToken));
   } catch (error) {
-    return res.status(401).json({
-      error: error instanceof Error ? error.message : "Authentication failed",
-    });
+    if (error instanceof Error && error.message === "Invalid refresh token") {
+      return res.status(401).json({ error: "invalid_refresh_token" });
+    }
+    console.error("POST /auth/refresh: unexpected error", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -90,7 +125,7 @@ app.post(
     let jti: string;
 
     try {
-      const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
+      const payload = jwt.verify(token, config.jwtSecret, { algorithms: ["HS256"] }) as {
         jti?: string;
       };
       if (!payload.jti) {

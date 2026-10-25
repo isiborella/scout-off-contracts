@@ -1,4 +1,4 @@
--- migrations/013_sep10_sessions.sql
+-- migrations/014_sep10_sessions.sql
 -- SEP-10 session model (#1606): a single-use challenge store and rotating
 -- server-side refresh tokens.
 --

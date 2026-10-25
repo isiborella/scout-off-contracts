@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "crypto";
 import jwt from "jsonwebtoken";
 import { WebAuth, Keypair, Networks, TransactionBuilder } from "@stellar/stellar-sdk";
 import { prisma } from "../db";
+import { config } from "../config";
 
 interface Sep10TokenPayload {
   sub: string;
@@ -48,6 +49,7 @@ function refreshTokenTtlSeconds(): number {
 
 export function issueSep10Token(payload: Sep10TokenPayload, secret: string) {
   return jwt.sign(payload, secret, {
+    algorithm: "HS256",
     expiresIn: accessTokenTtlSeconds(),
     jwtid: uuidv4(),
   });
@@ -55,11 +57,11 @@ export function issueSep10Token(payload: Sep10TokenPayload, secret: string) {
 
 function sep10Config() {
   return {
-    serverKeypair: Keypair.fromSecret(process.env.SEP10_SIGNING_SECRET!),
-    homeDomain: process.env.HOME_DOMAIN!,
-    webAuthDomain: process.env.WEB_AUTH_DOMAIN!,
+    serverKeypair: Keypair.fromSecret(config.sep10SigningSecret),
+    homeDomain: config.homeDomain,
+    webAuthDomain: config.webAuthDomain,
     networkPassphrase:
-      process.env.STELLAR_NETWORK === "mainnet"
+      config.stellarNetwork === "mainnet"
         ? Networks.PUBLIC
         : Networks.TESTNET,
   };
@@ -163,7 +165,7 @@ export async function verifyChallengeTx(
  */
 export async function issueSession(account: string) {
   const role = await deriveRole(account);
-  const token = issueSep10Token({ sub: account, role }, process.env.JWT_SECRET!);
+  const token = issueSep10Token({ sub: account, role }, config.jwtSecret);
 
   const refreshToken = randomBytes(32).toString("base64url");
   await prisma.refreshToken.create({
@@ -208,7 +210,7 @@ export async function refreshSession(refreshToken: string) {
  */
 export async function deriveRole(wallet: string): Promise<string> {
   // Check admin addresses first (from env and on-chain admin registry).
-  const adminAddress = process.env.ADMIN_ADDRESS;
+  const { adminAddress } = config;
   if (adminAddress && wallet === adminAddress) {
     return "admin";
   }

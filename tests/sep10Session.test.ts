@@ -53,6 +53,7 @@ jest.mock("../src/db", () => ({
 }));
 
 import { app } from "../src/app";
+import { config } from "../src/config";
 
 const server = Keypair.random();
 const client = Keypair.random();
@@ -61,7 +62,6 @@ beforeAll(() => {
   process.env.SEP10_SIGNING_SECRET = server.secret();
   process.env.HOME_DOMAIN = "scoutchain.com";
   process.env.WEB_AUTH_DOMAIN = "app.scoutchain.com";
-  process.env.JWT_SECRET = "test-jwt-secret";
   process.env.STELLAR_NETWORK = "testnet";
 });
 
@@ -128,7 +128,7 @@ describe("session tokens", () => {
     process.env.ACCESS_TOKEN_TTL_SECONDS = "86400";
     const res = await login(sign(await getChallenge())).expect(200);
 
-    const decoded: any = jwt.verify(res.body.token, process.env.JWT_SECRET!);
+    const decoded: any = jwt.verify(res.body.token, config.jwtSecret);
     expect(decoded.exp - decoded.iat).toBeLessThanOrEqual(900);
     expect(res.body.refreshToken).toBeDefined();
   });
@@ -137,7 +137,7 @@ describe("session tokens", () => {
     process.env.ACCESS_TOKEN_TTL_SECONDS = "60";
     const res = await login(sign(await getChallenge())).expect(200);
 
-    const decoded: any = jwt.verify(res.body.token, process.env.JWT_SECRET!);
+    const decoded: any = jwt.verify(res.body.token, config.jwtSecret);
     expect(decoded.exp - decoded.iat).toBe(60);
   });
 
