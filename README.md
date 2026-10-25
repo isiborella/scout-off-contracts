@@ -852,3 +852,6 @@ Quick checklist:
 
 <!-- handsoff-issue-1674 -->
 - #1674: scout_access: remove the unreachable `effective_limit == 0` branch in get_player_access_grants
+
+<!-- handsoff-issue-1668 -->
+- #1668: progress: set_registration_contract has a merged/misplaced doc comment and skips the instance-TTL bump its siblings perform

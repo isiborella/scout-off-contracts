@@ -94,6 +94,12 @@ pub enum ProgressError {
     SeedTimestampRegression = 26,
     /// Wiring target failed the `contract_kind`/`version` handshake (#1610).
     InvalidPeerContract = 27,
+
+    // ── History proof / sealing ──
+    /// `verify_and_seal_root` could not find a stored Merkle root for the
+    /// player during an idempotent seeding replay. The player exists but the
+    /// expected root is absent, so this is not a `PlayerNotFound` condition.
+    HistoryRootMissing = 28,
 }
 
 impl AdminError for ProgressError {
@@ -131,5 +137,6 @@ mod tests {
         assert_eq!(ProgressError::MigrationWindowSealed as u32, 21);
         assert_eq!(ProgressError::SchemaVersionTooNew as u32, 22);
         assert_eq!(ProgressError::UnknownSchemaTarget as u32, 23);
+        assert_eq!(ProgressError::HistoryRootMissing as u32, 28);
     }
 }
